@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+env/
+.ipynb_checkpoints/
+
+# Data and outputs (adjust if you don't want to track Datasets/)
+Datasets/
+*.h5
+*.npz
+*.npy
+*.pkl
+*.pdf
+
+# Jupyter
+.ipynb_checkpoints
