@@ -8,7 +8,7 @@ This repository contains the full implementation of our persistent homology–ba
 
 ## Pipeline overview
 
-Begin with a train ensemble $\mathcal{R}$. This can be stored as a $NxT$ numpy array of $0$s and $1s$ where each row represents a neuron's spike train (N neurons, recorded for Tms.)
+Begin with a train ensemble $\mathcal{R}$. This can be stored as a $NxT$ numpy array of $0s$ and $1s$ where each row represents a neuron's spike train (N neurons, recorded for Tms.)
 
 To compute persistence barcode of a train ensemble:
   * Use `VP` function to compute the Victor-Purpura pairwise distance matrix.
