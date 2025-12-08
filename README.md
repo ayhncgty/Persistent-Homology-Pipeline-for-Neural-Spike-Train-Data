@@ -69,6 +69,7 @@ dependencies:
       - elephant
       - neo
       - quantities
+      - gudhi
 ```
 
 
