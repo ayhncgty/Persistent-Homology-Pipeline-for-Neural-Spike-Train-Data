@@ -34,7 +34,7 @@ def plot_raster(raster, title='Raster Plot', xlabel='Time (ms)', ylabel='Neuron 
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
-    ax.set_yticks(ticks=np.arange(0,raster.shape[0]), labels=np.arange(0, raster.shape[0]))
+    ax.set_yticks(ticks=np.arange(0,raster.shape[0]), labels=np.arange(1, raster.shape[0]+1))
     ax.set_xlim(-0.5, raster.shape[1] +10)
     ax.set_ylim(-0.5, raster.shape[0] + 0.5)
 
