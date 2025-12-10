@@ -18,9 +18,8 @@ conda activate spike-train-tda
 
 3. Launch JupyterLab / Notebook and open the notebooks:
 ```bash
+conda install jupyterlab   # or: conda install notebook. This should be run inside the environment.
 jupyter lab
-# or
-jupyter notebook
 ```
 
 ## Environment & Dependencies
