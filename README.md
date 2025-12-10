@@ -80,7 +80,7 @@ train_ensemble_R = np.array([...])
 ```
 Compute **persistent homology** with `ripser` (choose a homology dimension)
 ```python
-ph_R = ripser(vp_dm,distance_matrix = True)['dgms'][0]
+ph_R = ripser(vp_dm,distance_matrix = True)['dgms'][0] # say 0-dim homology
 ```
 Visualize the barcode
 ```python
