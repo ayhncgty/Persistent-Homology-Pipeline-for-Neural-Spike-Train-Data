@@ -1,28 +1,6 @@
-EVERYTHING BELOW IS TO BE COMPLETED/REFINED.
 # A Persistent Homology Pipeline for Neural Spike Train Data
 
-This repository contains the full implementation of our persistent homology–based pipeline for analyzing neural spike-train data, accompanying our paper **[arXiv Link soon]**
-
-## Implementation Details
-* To be written
-
-## Pipeline overview
-
-Begin with a train ensemble $\mathcal{R}$. This can be stored as a $NxT$ numpy array of $0s$ and $1s$ where each row represents a neuron's spike train (N neurons, recorded for Tms.)
-
-To compute persistence barcode of a train ensemble:
-  * Use `VP` function to compute the Victor-Purpura pairwise distance matrix.
-  * Feed that distance matrix into `ripser`. persistent homology in a chosen homology dimension.
-  * Use `plot_barcode` function to study its persistence barcode qualitatively.
-
-Suppose now you have a dataset of train ensembles, each labeled with its corresponding stimulus. 
-  * Compute persistent homology of each train ensemble in the dataset.
-  * Compute pairwise bottleneck distances using `bottleneck_zero` if in dimension 0, otherwise use `persim.bottleneck`.
-  * To assess the network's quality and the model's ability to classify stimuli:
-    *    Train 1-NN classifer on the entire dataset using the labeled barcodes.
-    *    Perform LOOCv to obtain a classification score.
-  * You can also visualize the MDS plot of the BDM for a qualitative understanding of how the barcodes are distributed.
-
+This repository implements our persistent homology based pipeline for neural spike train analysis, accompanying our paper [arXiv:2512.08637](https://arxiv.org/abs/2512.08637), and includes code to reproduce all results and figures.
 
 ## Quickstart
 
@@ -73,34 +51,70 @@ dependencies:
 ```
 
 
+## Implementation Details
+
+All analyses were performed on standard laptop CPUs. The pipeline relies on:
+
+- **Victor–Purpura distance:**  
+  - We compute VP distances using the [`Elephant`](https://elephant.readthedocs.io/en/latest/) library  
+    (see [Victor & Purpura, 1996](https://journals.physiology.org/doi/pdf/10.1152/jn.1996.76.2.1310)).  
+  - For the special case \(q > 2\), we use a simplified implementation (`VP_trivial`).
+- **Persistent homology:** computed with [`ripser.py`](https://github.com/scikit-tda/ripser.py).
+- **Bottleneck distance:**
+  - For degree-0 diagrams, we use a custom optimized bottleneck routine (`bottleneck_zero`), which is more computationally efficient than general-purpose implementations such as `persim.bottleneck` but applies only to degree-0 diagrams. It is based on the formula in Corollary 4.15 of [Ayhan & Needham (2025)](https://arxiv.org/abs/2506.21488).
+  - For degree-1, we use the `persim` implementation from the `scikit-tda` library.
+  - For the biological datasets, we additionally use `Gudhi` for bottleneck computations.
+
+
+## Pipeline overview
+
+**Note:** To run your own computations, open a Jupyter notebook and import the utility functions:
+
+```python
+from utils import *
+```
+
+Begin with a **train ensemble** $\mathcal{R}$, stored as NxT NumPy array of 0s and 1s (one row per neuron).
+```python
+train_ensemble_R = np.array([...])
+```
+Compute **persistent homology** with `ripser` (choose a homology dimension)
+```python
+ph_R = ripser(vp_dm,distance_matrix = True)['dgms'][0]
+```
+Visualize the barcode
+```python
+plot_barcode(ph_R,r =200) # choose r large enough to show all bars
+```
+
+Suppose now you have a dataset of train ensembles, each labeled with its corresponding stimulus. 
+  * Compute persistent homology for each ensemble.
+  * Compute pairwise bottleneck distance matrix and store it in a numpy array `BDM`.
+
+To assess classification performance:
+- Train 1-NN classifier and,
+- validate it using Leave One Out cross-validation.
+Both steps are handled by the `LeaveOneOut` function applied to `BDM` and class labels:
+```python
+LeaveOneOut(BDM, labels)["accuracy_score"]  # returns the classification score
+```
+You can also visualize the MDS plot of the BDM for a qualitative understanding of how the barcodes are distributed.
+
+
 ## Data
-The datasets used in the paper are held by the Vincis lab [CITE]
+- **Data From Behaving Mice:** The biological datasets used in the paper are held by the Vincis lab: [https://github.com/vincisLab/neuron-response-classification]
+- **Synthetic Data:** Code for generating the synthetic datasets used in our experiments are included in this repository.
 
-## Notebooks & demos
+## Notebooks
 
-We include Jupyter notebooks to reproduce the main experiments and to help you run the pipeline.
+We include Jupyter notebooks for reproducing the main experiments and figures from the paper.  
+Each notebook is named according to the corresponding figure (e.g., `Figure-4-Synthetic-Data-Experiment-1.ipynb` reproduces Figure 4).
 
-- Synthetic-Data-Experiment-1.ipynb
-  In this notebook we show:
-    * Construction of the synthetic dataset for experiment 1
-    * Performing the TDA pipelin.
-    * Comparison of the network approach with the individual neurons
-    * Statistical significance test in classification scores.
-  
-- Synthetic-Data-Experiment-2.ipynb  
-  In this notebook
-    * We construct a synthetic train ensemble $\mathcal{R}$ with non-trivial 1-dimensional homology feature.
-    * We go through how we compute the persistent homology of $\mathcal{R}$ equipped with the Victor-Purpura distance.
-    * We construct another synthetic train ensemble, denoted $\mathcal{R}'$ such that its connectivity is similar to that of $\mathcal{R}$ but exhibits no 1-dimensional homology.
-    * We make the point that TDA Detects Higher-Order Structure Beyond Connectivity by comparing the persistence barcodes of $\mathcal{R}$ and $\mathcal{R}'$ using bottleneck distance.
+**Note:** The file `Data for Figure Generation.zip` contains pre-computed classification scores for varying $q$ values in the Victor–Purpura distance.  
+These data are used for generating Figure 6 and accompany the notebook dedicated to that figure.
 
-- Analysis-of-Data-From-Behaving-Mice.ipynb  
-    * To be written.
-
-
-
-## License
-To be written.
 
 ## Contact
-For questions about the code or dataset access, contact the corresponding author listed in the paper [citation].
+For questions about the code or the paper, please contact the corresponding author, Tom Needham, as listed in the manuscript: https://arxiv.org/abs/2512.08637
+
+
