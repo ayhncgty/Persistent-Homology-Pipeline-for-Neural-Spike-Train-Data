@@ -73,15 +73,19 @@ All analyses were performed on standard laptop CPUs. The pipeline relies on:
 from utils import *
 ```
 
-Begin with a **train ensemble** $\mathcal{R}$, stored as NxT NumPy array of 0s and 1s (one row per neuron).
+Begin with a **train ensemble** $\mathcal{R}$, stored as NxT NumPy array of 0s and 1s (one row per neuron):
 ```python
 train_ensemble_R = np.array([...])
 ```
-Compute **persistent homology** with `ripser` (choose a homology dimension)
+Compute pairwise **Victor-Purpura distances**:
+```python
+vp_dm = VP_trivial(train_ensemble_R)
+```
+Compute **persistent homology** with `ripser` (choose a homology dimension):
 ```python
 ph_R = ripser(vp_dm,distance_matrix = True)['dgms'][0] # say 0-dim homology
 ```
-Visualize the barcode
+Visualize the barcode:
 ```python
 plot_barcode(ph_R,r =200) # choose r large enough to show all bars
 ```
