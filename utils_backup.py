@@ -71,8 +71,7 @@ def plot_barcode(barcode_dim_0,
                         bar_height=0.25,
                         pad=0.05,
                         ax=None,
-                        colors=None,
-                        linewidth=8):
+                        colors=None):
     """
     Plot persistence barcodes given separate arrays for H0 and H1.
 
@@ -147,7 +146,7 @@ def plot_barcode(barcode_dim_0,
     # Plot bars
     xmax = 0.0
     for dim, y, b, d in y_positions:
-        ax.plot([b, d], [y, y], color=colors.get(dim, 'black'), linewidth=linewidth)
+        ax.plot([b, d], [y, y], color=colors.get(dim, 'black'), linewidth=2)
         xmax = max(xmax, d)
 
     # Axis formatting
@@ -164,7 +163,7 @@ def plot_barcode(barcode_dim_0,
     if any(dim == 1 for dim, _, _, _ in y_positions):
         legend_elements.append(Patch(facecolor=colors[1], edgecolor='none', label="H1"))
     if legend_elements:
-        ax.legend(handles=legend_elements, loc='upper left')
+        ax.legend(handles=legend_elements, loc='upper right')
 
  # ==========================================================
 
@@ -601,109 +600,3 @@ def TDA_pipeline(
         results['DMs'] = DMs
     
     return results
-
-
-
-## Below added April 21 2026
-
-from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score, confusion_matrix
-from sklearn.neighbors import KNeighborsClassifier
-from scipy.ndimage import gaussian_filter
-from ripser import ripser
-from tqdm import tqdm
-
-def rasters_to_barcode(list_of_rasters, dim = 0, q = 3.0):
-    list_of_barcodes = []
-    for raster in tqdm(list_of_rasters, desc="Generating barcodes"):
-        if q > 2.0:
-            vp_dm = VP_trivial(raster)
-        else:
-            vp_dm = VP(raster, q = q)
-        dgm = ripser(vp_dm,distance_matrix= True)['dgms'][dim]
-        list_of_barcodes.append(dgm)
-
-    return list_of_barcodes
-
-def tda_rhv(rasters,labels,dim = 0,n_repeats = 20, test_size = 0.3, q =3.0, random_state = 42): # TDA pipeline with repeated holdout validation (rhv)
-    y = np.array(labels)
-    X_barcodes = rasters_to_barcode(rasters,dim = dim, q = q)
-    n = len(X_barcodes)
-    BDM = np.zeros((n, n), dtype=float)
-    for i in tqdm(range(n), desc="Building BDM"):
-        for j in range(i + 1, n):
-            if dim == 0:
-                d = bottleneck_zero(X_barcodes[i], X_barcodes[j]) 
-            else:
-                d = persim.bottleneck(X_barcodes[i],X_barcodes[j])
-            
-            BDM[i, j] = d
-            BDM[j, i] = d
-
-    splitter = StratifiedShuffleSplit(
-        n_splits=n_repeats, test_size=test_size, random_state=random_state
-    )
-
-    scores = []
-    for train_idx, test_idx in splitter.split(np.zeros_like(y), y):
-        D_train = BDM[np.ix_(train_idx, train_idx)]
-        D_test = BDM[np.ix_(test_idx, train_idx)]
-
-        knn = KNeighborsClassifier(n_neighbors=1, metric="precomputed")
-        knn.fit(D_train, y[train_idx])
-        preds = knn.predict(D_test)
-
-        scores.append(accuracy_score(y[test_idx], preds))
-
-    mean_score = np.mean(scores) 
-    return mean_score
-    
-
-
-def raster_to_svm_features(raster, sigma=30):
-    """
-    Computes smoothed firing rates for the SVM baseline.
-    Flattens the array to create a 1D feature vector for each trial.
-    """
-    smoothed = gaussian_filter(raster.astype(float), sigma=(0, sigma))
-    return smoothed.flatten()
-
-def svm_smoothed_rasters(rasters, labels, sigma=30, n_repeats=20, test_size=0.3, random_state=42):
-    """
-    Evaluates SVM accuracy using smoothed firing rate feature vectors.
-    """
-    # Convert all rasters to smoothed 1D feature vectors
-    X = np.array([raster_to_svm_features(r, sigma) for r in rasters])
-    y = np.array(labels)
-    
-    unique_labels = np.unique(y)
-    splitter = StratifiedShuffleSplit(n_splits=n_repeats, test_size=test_size, random_state=random_state)
-    
-    # Standard linear SVM pipeline
-    svm = make_pipeline(
-        StandardScaler(),
-        SVC(kernel="linear", C=1.0)
-    )
-
-    scores = []
-    y_true_all, y_pred_all = [], []
-
-    for train_idx, test_idx in tqdm(splitter.split(X, y), total=n_repeats, desc="SVM (rhv)"):
-        svm.fit(X[train_idx], y[train_idx])
-        preds = svm.predict(X[test_idx])
-
-        scores.append(accuracy_score(y[test_idx], preds))
-        y_true_all.append(y[test_idx])
-        y_pred_all.append(preds)
-
-    mean_acc = float(np.mean(scores))
-    std_acc = float(np.std(scores, ddof=1))
-
-    y_true_all = np.concatenate(y_true_all)
-    y_pred_all = np.concatenate(y_pred_all)
-    cm = confusion_matrix(y_true_all, y_pred_all, labels=unique_labels)
-
-    return mean_acc, std_acc, cm
