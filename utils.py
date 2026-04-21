@@ -628,7 +628,7 @@ def rasters_to_barcode(list_of_rasters, dim = 0, q = 3.0):
 
     return list_of_barcodes
 
-def tda_rhv(rasters,labels,dim = 0,n_repeats = 20, test_size = 0.3, q =3.0, random_state = 42): # TDA pipeline with repeated holdout validation (rhv)
+def tda_rhv(rasters,labels,dim = 0,n_repeats = 20, test_size = 0.3, q =3.0, return_bdm = False, random_state = 42): # TDA pipeline with repeated holdout validation (rhv)
     y = np.array(labels)
     X_barcodes = rasters_to_barcode(rasters,dim = dim, q = q)
     n = len(X_barcodes)
@@ -659,7 +659,12 @@ def tda_rhv(rasters,labels,dim = 0,n_repeats = 20, test_size = 0.3, q =3.0, rand
         scores.append(accuracy_score(y[test_idx], preds))
 
     mean_score = np.mean(scores) 
-    return mean_score
+    if return_bdm:
+        return mean_score, BDM
+    else:
+        return mean_score
+
+
     
 
 
